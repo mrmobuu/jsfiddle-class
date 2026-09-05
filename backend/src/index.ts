@@ -1,6 +1,6 @@
 import express from "express";
 import { createClient } from "redis";
-import { prisma } from "./db";
+import { prisma } from "./db.js";
 
 const app = express();
 let client = createClient()

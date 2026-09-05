@@ -1,6 +1,7 @@
-const { createClient } = require("redis");
-const fs = require("fs");
-const { spawn } = require("child_process");
+import { createClient } from "redis"
+import fs from "fs"
+import { spawn } from "child_process"
+import { prisma } from "./db.js"
 
 const client = createClient();
 
@@ -18,9 +19,11 @@ client.connect().then(
             const parseResponse = JSON.parse(data);
             const language = parseResponse.language;
             const code = parseResponse.code;
-            const userId = parseResponse.userId;
+            const submissionId = parseResponse.id
 
             console.log("Processing question for user " + userId);
+
+            let fileOutput = "";
 
             if (language === "c++") {
                 const filePath = __dirname + "/code/a.cpp"
@@ -30,10 +33,23 @@ client.connect().then(
                 console.log("running code for c++");
                 const response = spawn("./code/out");
                 response.stdout.on("data", (chunk) => {
-                    console.log(chunk.toString());
+                    fileOutput += chunk.toString();
                 })
-
-
+                await new Promise(resolve => {
+                    response.on("exit", async () => {
+                        await prisma.submission.update({
+                            where: {
+                                id: submissionId
+                            },
+                            data: {
+                                status: "Suceess",
+                                output: fileOutput
+                            }
+                        })
+                    })
+                    fs.rmSync(__dirname + "/code/out");
+                    resolve();
+                })
             } else if (language === "js") {
                 const filePath = __dirname + "/code/a.js"
                 fs.writeFileSync(filePath, code);
@@ -42,7 +58,21 @@ client.connect().then(
                 console.log("running javascript program", code);
 
                 response.stdout.on("data", (chunk) => {
-                    console.log(chunk.toString());
+                    fileOutput += chunk.toString();
+                })
+                await new Promise(resolve => {
+                    response.on("exit", async () => {
+                        await prisma.submission.update({
+                            where: {
+                                id: submissionId
+                            },
+                            data: {
+                                status: "Suceess",
+                                output: fileOutput
+                            }
+                        })
+                    })
+                    resolve();
                 })
 
                 // await new Promise((r) => setTimeout(r, 2000));
@@ -51,8 +81,23 @@ client.connect().then(
                 fs.writeFileSync(filePath, code);
                 const response = spawn("python3", [filePath]);
                 response.stdout.on("data", (chunk) => {
-                    console.log(chunk.toString());
+                    fileOutput += chunk.toString();
                 })
+                await new Promise(resolve => {
+                    response.on("exit", async () => {
+                        await prisma.submission.update({
+                            where: {
+                                id: submissionId
+                            },
+                            data: {
+                                status: "Suceess",
+                                output: fileOutput
+                            }
+                        })
+                    })
+                    resolve();
+                })
+
             }
 
             // to-do update the value in the database 
