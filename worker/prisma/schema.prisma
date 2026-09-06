@@ -18,6 +18,7 @@ model Submission {
   code      String
   language  String
   output    String?
+  stdErr    String?
   status    SubmissionStatus
 }
 

@@ -8,6 +8,7 @@ export function App() {
   const [language, setLanguage] = useState("c++");
   const [status, setStatus] = useState<string>();
   const [output, setOutput] = useState<string>();
+  const [error, setError] = useState<string>();
 
 
   const pollBackend = async (submisionId: string) => {
@@ -18,6 +19,7 @@ export function App() {
     } else if (response.data.submission.status === "Failure") {
       console.log("failed")
       setOutput("Code Failure");
+      setError(response.data.submission?.stdErr || "no error output");
     } else {
       await new Promise(r => setTimeout(r, 3000));
       pollBackend(submisionId);
@@ -27,6 +29,7 @@ export function App() {
   const sendRequest = async () => {
     setStatus("");
     setOutput("");
+    setError("");
     const response = await axios.post(`${BACKEND_URL}/submission`, {
       "language": language,
       "code": textAreaRef.current?.value
@@ -51,9 +54,17 @@ export function App() {
         <div>
           Status = {status}
         </div>
-        <div>
-          Output = {output}
-        </div>
+        {!error && (
+          <div>
+            Output = {output}
+          </div>
+        )}
+
+        {error && (
+          <div>
+            Error = {error}
+          </div>
+        )}
       </div>
     </div>
   );

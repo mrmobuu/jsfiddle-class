@@ -25,12 +25,19 @@ client.connect().then(
             console.log("Processing question for data " + submissionId);
 
             let fileOutput = "";
+            let stdErrOutput = "";
 
             if (language === "c++") {
                 const filePath = __dirname + "/code/a.cpp"
                 fs.writeFileSync(filePath, code);
                 const responseCompiler = spawn("g++", [filePath, "-o", "./code/out"]);
                 let exitCodeCompiler = 0;
+
+                responseCompiler.stderr.on("data", (chunk) => {
+                    stdErrOutput += chunk.toString();
+
+                })
+
                 responseCompiler.on("exit", async (exitcode) => {
                     if (exitcode !== 0) {
                         exitCodeCompiler = exitcode;
@@ -39,7 +46,8 @@ client.connect().then(
                                 id: submissionId
                             },
                             data: {
-                                status: "Failure"
+                                status: "Failure",
+                                stdErr: stdErrOutput
                             }
                         })
                     }
@@ -53,6 +61,10 @@ client.connect().then(
                 const response = spawn("./code/out");
                 response.stdout.on("data", (chunk) => {
                     fileOutput += chunk.toString();
+                })
+
+                response.stderr.on("data", (chunk) => {
+                    stdErrOutput += chunk.toString();
                 })
 
                 await new Promise(resolve => {
@@ -74,6 +86,7 @@ client.connect().then(
                                 },
                                 data: {
                                     status: "Failure",
+                                    stdErr: stdErrOutput
                                 }
                             })
                         }
@@ -90,6 +103,11 @@ client.connect().then(
                 response.stdout.on("data", (chunk) => {
                     fileOutput += chunk.toString();
                 })
+
+                response.stderr.on("data", (chunk) => {
+                    stdErrOutput += chunk.toString();
+                })
+
                 await new Promise(resolve => {
                     response.on("exit", async (exitcode) => {
                         if (exitcode === 0) {
@@ -109,6 +127,7 @@ client.connect().then(
                                 },
                                 data: {
                                     status: "Failure",
+                                    stdErr: stdErrOutput
                                 }
                             })
                         }
@@ -121,9 +140,15 @@ client.connect().then(
                 const filePath = __dirname + "/code/a.py"
                 fs.writeFileSync(filePath, code);
                 const response = spawn("python3", [filePath]);
+
                 response.stdout.on("data", (chunk) => {
                     fileOutput += chunk.toString();
                 })
+
+                response.stderr.on("data", (chunk) => {
+                    stdErrOutput += chunk.toString();
+                })
+
                 await new Promise(resolve => {
                     response.on("exit", async (exitcode) => {
                         if (exitcode === 0) {
@@ -143,6 +168,7 @@ client.connect().then(
                                 },
                                 data: {
                                     status: "Failure",
+                                    stdErr: stdErrOutput
                                 }
                             })
                         }
