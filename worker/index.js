@@ -19,9 +19,10 @@ client.connect().then(
             const parseResponse = JSON.parse(data);
             const language = parseResponse.language;
             const code = parseResponse.code;
-            const submissionId = parseResponse.id
+            const submissionId = parseResponse.submissionId
 
-            console.log("Processing question for user " + userId);
+            // console.log("Processing question for data " + JSON.stringify(parseResponse));
+            console.log("Processing question for data " + submissionId);
 
             let fileOutput = "";
 
@@ -47,7 +48,6 @@ client.connect().then(
                             }
                         })
                     })
-                    fs.rmSync(__dirname + "/code/out");
                     resolve();
                 })
             } else if (language === "js") {
