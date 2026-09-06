@@ -1,0 +1,60 @@
+import axios from "axios";
+import "./index.css";
+import { useRef, useState } from "react";
+
+const BACKEND_URL = "http://localhost:3000";
+export function App() {
+  const textAreaRef = useRef<HTMLTextAreaElement>(null);
+  const [status, setStatus] = useState<string>();
+  const [output, setOutput] = useState<string>();
+
+
+  const pollBackend = async (submisionId: string) => {
+    const response = await axios.get(`${BACKEND_URL}/submission/${submisionId}`);
+    setStatus(response.data.submission.status);
+    if (response.data.submission.status === "Suceess") {
+      setOutput(response.data.submission.output);
+    } else if (response.data.submission.status === "Failure") {
+      console.log("failed")
+      setOutput("Code Failure");
+    } else {
+      await new Promise(r => setTimeout(r, 3000));
+      pollBackend(submisionId);
+    }
+  }
+
+  const sendRequest = async () => {
+    setStatus("");
+    setOutput("");
+    const response = await axios.post(`${BACKEND_URL}/submission`, {
+      "language": "c++",
+      "code": textAreaRef.current?.value
+    });
+
+    console.log(response.data);
+    pollBackend(response.data.id)
+  }
+  return (
+    <div className="w-screen h-screen flex">
+      <div className="flex-1 h-screen">
+        <div className="flex justify-around">
+          <button className="p-1 bg-gray-200 border-1" onClick={sendRequest}>Submit</button>
+          <button className="p-1 bg-gray-200 border-1">C++</button>
+          <button className="p-1 bg-gray-200 border-1">Javascript</button>
+          <button className="p-1 bg-gray-200 border-1">python</button>
+        </div>
+        <textarea ref={textAreaRef} className="h-screen w-full m-4 p-4 border-2" name="code-editor" id="editor"></textarea>
+      </div>
+      <div className="flex-1 h-screen bg-green-300">
+        <div>
+          Status = {status}
+        </div>
+        <div>
+          Output = {output}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default App;

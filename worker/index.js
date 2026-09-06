@@ -44,7 +44,6 @@ client.connect().then(
                         })
                     }
                 })
-                console.log("exitCodeCompiler ", exitCodeCompiler);
                 if (exitCodeCompiler !== 0) {
                     continue;
                 }
