@@ -29,24 +29,46 @@ client.connect().then(
             if (language === "c++") {
                 const filePath = __dirname + "/code/a.cpp"
                 fs.writeFileSync(filePath, code);
-                spawn("g++", [filePath, "-o", "./code/out"]);
-                await new Promise((r) => setTimeout(r, 5000));
-                console.log("running code for c++");
-                const response = spawn("./code/out");
-                response.stdout.on("data", (chunk) => {
-                    fileOutput += chunk.toString();
-                })
-                await new Promise(resolve => {
-                    response.on("exit", async () => {
+                const responseCompiler = spawn("g++", [filePath, "-o", "./code/out"]);
+                let exitCodeCompiler = null;
+                responseCompiler.on("exit", async (exitcode) => {
+                    if (exitcode !== 0) {
+                        exitCodeCompiler = exitcode;
                         await prisma.submission.update({
                             where: {
                                 id: submissionId
                             },
                             data: {
-                                status: "Suceess",
-                                output: fileOutput
+                                status: "Failure"
                             }
                         })
+                    }
+                })
+                console.log("exitCodeCompiler ", exitCodeCompiler);
+                if (exitCodeCompiler !== 0) {
+                    continue;
+                }
+
+                // await new Promise((r) => setTimeout(r, 5000));
+                console.log("running code for c++");
+                const response = spawn("./code/out");
+                response.stdout.on("data", (chunk) => {
+                    fileOutput += chunk.toString();
+                })
+
+                await new Promise(resolve => {
+                    response.on("exit", async (exitcode) => {
+                        if (exitcode === 0) {
+                            await prisma.submission.update({
+                                where: {
+                                    id: submissionId
+                                },
+                                data: {
+                                    status: "Suceess",
+                                    output: fileOutput
+                                }
+                            })
+                        }
                     })
                     resolve();
                 })
